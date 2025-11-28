@@ -26,53 +26,102 @@
         h1 {
             color: #333;
         }
-        .redirect-info {
+        .input-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="url"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #1565c0;
+        }
+        button.secondary {
+            background-color: #757575;
+        }
+        button.secondary:hover {
+            background-color: #616161;
+        }
+        .instructions {
             margin-top: 20px;
             padding: 15px;
             background-color: #e9f7fe;
             border-left: 4px solid #2196F3;
             border-radius: 4px;
+            text-align: left;
         }
-        .target-url {
-            font-weight: bold;
-            color: #1976d2;
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
         }
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0,0,0,.3);
-            border-radius: 50%;
-            border-top-color: #000;
-            animation: spin 1s ease-in-out infinite;
+        .status.success {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .status.error {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>PWA Wrapper</h1>
-        <p>正在重定向到目标网站...</p>
-        <div class="redirect-info">
-            <p>即将跳转至: <span class="target-url" id="targetUrl">https://www.example.com</span></p>
-            <p><span class="loading"></span> 正在加载中...</p>
+        <p>请输入您要包装的网站URL：</p>
+        
+        <div class="input-group">
+            <label for="targetUrl">目标网站URL：</label>
+            <input type="url" id="targetUrl" placeholder="https://example.com" value="https://">
         </div>
-        <p>如果未自动跳转，请点击下方按钮:</p>
-        <button onclick="redirectToTarget()" style="padding: 10px 20px; background-color: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">立即跳转</button>
+        
+        <button onclick="redirectToTarget()">跳转到网站</button>
+        <button class="secondary" onclick="saveUrl()">保存URL</button>
+        
+        <div id="statusMessage" class="status"></div>
+        
+        <div class="instructions">
+            <h3>使用说明：</h3>
+            <ol>
+                <li>在上方输入框中输入您想要包装的网站完整URL</li>
+                <li>点击"跳转到网站"按钮即可访问该网站</li>
+                <li>点击"保存URL"可以保存当前输入的URL，下次打开应用时会自动加载</li>
+                <li>要将此应用安装到桌面，请在浏览器中选择"安装"或"添加到主屏幕"</li>
+            </ol>
+        </div>
     </div>
 
     <script>
-        // 设置目标网址
-        const TARGET_URL = "https://www.example.com"; // 请修改为目标网站
-        
-        // 显示目标网址
-        document.getElementById("targetUrl").textContent = TARGET_URL;
-        
-        // 注册 Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
+        // 页面加载时恢复保存的URL
+        window.addEventListener('load', function() {
+            const savedUrl = localStorage.getItem('savedTargetUrl');
+            if (savedUrl) {
+                document.getElementById('targetUrl').value = savedUrl;
+                showStatus('已恢复上次保存的URL', 'success');
+            }
+            
+            // 注册 Service Worker
+            if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js')
                     .then(registration => {
                         console.log('SW registered: ', registration);
@@ -80,17 +129,66 @@
                     .catch(registrationError => {
                         console.log('SW registration failed: ', registrationError);
                     });
-            });
-        }
+            }
+        });
         
-        // 自动重定向到目标网站
+        // 跳转到目标网站
         function redirectToTarget() {
-            window.location.href = TARGET_URL;
+            const urlInput = document.getElementById('targetUrl');
+            const targetUrl = urlInput.value.trim();
+            
+            if (!targetUrl || targetUrl === 'https://') {
+                showStatus('请输入有效的URL', 'error');
+                return;
+            }
+            
+            // 验证URL格式
+            try {
+                new URL(targetUrl);
+                window.location.href = targetUrl;
+            } catch (e) {
+                showStatus('请输入有效的URL格式（包含http://或https://）', 'error');
+            }
         }
         
-        // 页面加载完成后自动跳转
-        window.addEventListener('load', function() {
-            setTimeout(redirectToTarget, 2000); // 2秒后自动跳转
+        // 保存URL到本地存储
+        function saveUrl() {
+            const urlInput = document.getElementById('targetUrl');
+            const targetUrl = urlInput.value.trim();
+            
+            if (!targetUrl || targetUrl === 'https://') {
+                showStatus('请输入有效的URL后再保存', 'error');
+                return;
+            }
+            
+            // 验证URL格式
+            try {
+                new URL(targetUrl);
+                localStorage.setItem('savedTargetUrl', targetUrl);
+                showStatus('URL已保存成功', 'success');
+            } catch (e) {
+                showStatus('请输入有效的URL格式后再保存', 'error');
+            }
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+            
+            // 3秒后自动隐藏消息
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 回车键触发跳转
+        document.getElementById('targetUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                redirectToTarget();
+            }
         });
     </script>
 </body>
