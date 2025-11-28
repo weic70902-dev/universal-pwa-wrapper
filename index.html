@@ -121,6 +121,24 @@
             z-index: 1000;
             display: none;
         }
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+            border-radius: 4px;
+            padding: 20px;
+            z-index: 2000;
+            display: none;
+            text-align: center;
+            max-width: 80%;
+        }
+        .error-message button {
+            margin-top: 15px;
+            max-width: none;
+        }
     </style>
 </head>
 <body>
@@ -149,6 +167,7 @@
                 <li>点击"加载网站"按钮即可在应用内浏览该网站</li>
                 <li>点击"保存URL"可以保存当前输入的URL，下次打开应用时会自动加载</li>
                 <li>要将此应用安装到桌面，请在浏览器中选择"安装"或"添加到主屏幕"</li>
+                <li>注意：某些网站可能阻止iframe加载，此时会自动跳转到新窗口</li>
             </ol>
         </div>
     </div>
@@ -156,8 +175,17 @@
     <div class="iframe-container" id="iframeContainer">
         <iframe id="websiteFrame" title="目标网站"></iframe>
     </div>
+    
+    <div class="error-message" id="errorMessage">
+        <h3>无法在应用内加载此网站</h3>
+        <p>该网站阻止了iframe嵌入，将为您在新窗口中打开。</p>
+        <button onclick="openInNewWindow()">在新窗口中打开</button>
+        <button class="secondary" onclick="hideErrorMessage()">返回</button>
+    </div>
 
     <script>
+        let currentUrl = "";
+        
         // 页面加载时恢复保存的URL
         window.addEventListener('load', function() {
             const savedUrl = localStorage.getItem('savedTargetUrl');
@@ -191,6 +219,7 @@
             // 验证URL格式
             try {
                 new URL(targetUrl);
+                currentUrl = targetUrl;
                 
                 // 显示iframe容器，隐藏输入表单
                 document.getElementById('inputContainer').style.display = 'none';
@@ -198,16 +227,55 @@
                 document.getElementById('backButton').style.display = 'block';
                 
                 // 在iframe中加载网站
-                document.getElementById('websiteFrame').src = targetUrl;
+                const iframe = document.getElementById('websiteFrame');
+                iframe.src = targetUrl;
+                
+                // 添加加载错误处理
+                iframe.onload = function() {
+                    // 加载成功
+                    console.log("Iframe loaded successfully");
+                };
+                
+                iframe.onerror = function() {
+                    // 加载失败，可能是被阻止了
+                    console.log("Iframe failed to load");
+                    handleIframeError(targetUrl);
+                };
             } catch (e) {
                 showStatus('请输入有效的URL格式（包含http://或https://）', 'error');
             }
         }
         
+        // 处理iframe加载错误
+        function handleIframeError(url) {
+            // 隐藏iframe容器
+            document.getElementById('iframeContainer').style.display = 'none';
+            document.getElementById('backButton').style.display = 'none';
+            
+            // 显示错误消息
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+        
+        // 在新窗口中打开网站
+        function openInNewWindow() {
+            if (currentUrl) {
+                window.open(currentUrl, '_blank');
+            }
+            hideErrorMessage();
+            showInputForm();
+        }
+        
+        // 隐藏错误消息
+        function hideErrorMessage() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('inputContainer').style.display = 'flex';
+        }
+        
         // 返回输入表单
         function showInputForm() {
-            // 隐藏iframe容器，显示输入表单
+            // 隐藏iframe容器和错误消息，显示输入表单
             document.getElementById('iframeContainer').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('backButton').style.display = 'none';
             document.getElementById('inputContainer').style.display = 'flex';
             
