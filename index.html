@@ -11,39 +11,22 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             background-color: #f5f5f5;
-            overflow: hidden;
-            height: 100vh;
         }
         .container {
-            width: 100%;
-            height: 100vh;
+            max-width: 800px;
+            margin: 0 auto;
             background-color: white;
             padding: 20px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .iframe-container {
-            width: 100%;
-            height: 100vh;
-            display: none;
-        }
-        #websiteFrame {
-            width: 100%;
-            height: 100%;
-            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
         }
         h1 {
             color: #333;
-            margin-bottom: 20px;
         }
         .input-group {
-            width: 80%;
-            max-width: 600px;
             margin: 20px 0;
             text-align: left;
         }
@@ -54,19 +37,10 @@
         }
         input[type="url"] {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
-            font-size: 16px;
-        }
-        .button-group {
-            width: 80%;
-            max-width: 600px;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
         }
         button {
             padding: 12px 24px;
@@ -76,8 +50,7 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
-            flex: 1;
-            max-width: 200px;
+            margin: 10px 5px;
         }
         button:hover {
             background-color: #1565c0;
@@ -89,8 +62,6 @@
             background-color: #616161;
         }
         .instructions {
-            width: 80%;
-            max-width: 600px;
             margin-top: 20px;
             padding: 15px;
             background-color: #e9f7fe;
@@ -99,9 +70,7 @@
             text-align: left;
         }
         .status {
-            width: 80%;
-            max-width: 600px;
-            margin: 20px 0;
+            margin-top: 20px;
             padding: 15px;
             border-radius: 4px;
             display: none;
@@ -114,51 +83,10 @@
             background-color: #ffebee;
             border-left: 4px solid #f44336;
         }
-        .back-button {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            display: none;
-        }
-        .error-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #ffebee;
-            border: 1px solid #f44336;
-            border-radius: 4px;
-            padding: 20px;
-            z-index: 2000;
-            display: none;
-            text-align: center;
-            max-width: 80%;
-        }
-        .error-message button {
-            margin-top: 15px;
-            max-width: none;
-        }
-        .auto-redirect-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #e9f7fe;
-            border: 1px solid #2196F3;
-            border-radius: 4px;
-            padding: 20px;
-            z-index: 2000;
-            display: none;
-            text-align: center;
-            max-width: 80%;
-        }
     </style>
 </head>
 <body>
-    <button class="back-button" id="backButton" onclick="showInputForm()">返回</button>
-    
-    <div class="container" id="inputContainer">
+    <div class="container">
         <h1>PWA Wrapper</h1>
         <p>请输入您要包装的网站URL：</p>
         
@@ -167,10 +95,8 @@
             <input type="url" id="targetUrl" placeholder="https://example.com" value="https://gemini.google.com/app">
         </div>
         
-        <div class="button-group">
-            <button onclick="loadWebsite()">加载网站</button>
-            <button class="secondary" onclick="saveUrl()">保存URL</button>
-        </div>
+        <button onclick="redirectToTarget()">跳转到网站</button>
+        <button class="secondary" onclick="saveUrl()">保存URL</button>
         
         <div id="statusMessage" class="status"></div>
         
@@ -178,37 +104,14 @@
             <h3>使用说明：</h3>
             <ol>
                 <li>在上方输入框中输入您想要包装的网站完整URL</li>
-                <li>点击"加载网站"按钮即可在应用内浏览该网站</li>
+                <li>点击"跳转到网站"按钮即可访问该网站</li>
                 <li>点击"保存URL"可以保存当前输入的URL，下次打开应用时会自动加载</li>
                 <li>要将此应用安装到桌面，请在浏览器中选择"安装"或"添加到主屏幕"</li>
-                <li>注意：某些网站可能阻止iframe加载，此时会自动在新窗口中打开</li>
             </ol>
         </div>
     </div>
-    
-    <div class="iframe-container" id="iframeContainer">
-        <iframe id="websiteFrame" title="目标网站"></iframe>
-    </div>
-    
-    <div class="error-message" id="errorMessage">
-        <h3>无法在应用内加载此网站</h3>
-        <p>该网站阻止了iframe嵌入，将为您在新窗口中打开。</p>
-        <button onclick="openInNewWindow()">在新窗口中打开</button>
-        <button class="secondary" onclick="hideErrorMessage()">返回</button>
-    </div>
-    
-    <div class="auto-redirect-message" id="autoRedirectMessage">
-        <h3>网站阻止了iframe嵌入</h3>
-        <p>正在为您自动跳转到新窗口...</p>
-        <p>如果未自动跳转，请点击下方按钮：</p>
-        <button onclick="openInNewWindow()">手动跳转</button>
-        <button class="secondary" onclick="hideAutoRedirectMessage()">取消</button>
-    </div>
 
     <script>
-        let currentUrl = "";
-        let redirectTimeout;
-        
         // 页面加载时恢复保存的URL
         window.addEventListener('load', function() {
             const savedUrl = localStorage.getItem('savedTargetUrl');
@@ -229,8 +132,8 @@
             }
         });
         
-        // 加载网站到iframe
-        function loadWebsite() {
+        // 跳转到目标网站
+        function redirectToTarget() {
             const urlInput = document.getElementById('targetUrl');
             const targetUrl = urlInput.value.trim();
             
@@ -242,108 +145,10 @@
             // 验证URL格式
             try {
                 new URL(targetUrl);
-                currentUrl = targetUrl;
-                
-                // 显示iframe容器，隐藏输入表单
-                document.getElementById('inputContainer').style.display = 'none';
-                document.getElementById('iframeContainer').style.display = 'block';
-                document.getElementById('backButton').style.display = 'block';
-                
-                // 在iframe中加载网站
-                const iframe = document.getElementById('websiteFrame');
-                iframe.src = targetUrl;
-                
-                // 添加加载错误处理
-                iframe.onload = function() {
-                    // 加载成功
-                    console.log("Iframe loaded successfully");
-                };
-                
-                iframe.onerror = function() {
-                    // 加载失败，可能是被阻止了
-                    console.log("Iframe failed to load");
-                    handleIframeError(targetUrl);
-                };
-                
-                // 设置超时检测，某些网站可能不会触发onerror
-                setTimeout(function() {
-                    detectFrameBlocking(targetUrl);
-                }, 3000);
+                window.location.href = targetUrl;
             } catch (e) {
                 showStatus('请输入有效的URL格式（包含http://或https://）', 'error');
             }
-        }
-        
-        // 检测iframe是否被阻止加载
-        function detectFrameBlocking(url) {
-            const iframe = document.getElementById('websiteFrame');
-            try {
-                // 尝试访问iframe的内容，如果被阻止会抛出异常
-                if (iframe.contentDocument || iframe.contentWindow.document) {
-                    // 如果能访问到，说明没有被阻止
-                    return;
-                }
-            } catch (e) {
-                // 如果捕获到异常，说明iframe被阻止加载
-                handleIframeError(url);
-            }
-        }
-        
-        // 处理iframe加载错误
-        function handleIframeError(url) {
-            // 隐藏iframe容器
-            document.getElementById('iframeContainer').style.display = 'none';
-            document.getElementById('backButton').style.display = 'none';
-            
-            // 显示自动跳转消息
-            document.getElementById('autoRedirectMessage').style.display = 'block';
-            
-            // 2秒后自动跳转
-            redirectTimeout = setTimeout(function() {
-                openInNewWindow();
-            }, 2000);
-        }
-        
-        // 在新窗口中打开网站
-        function openInNewWindow() {
-            if (currentUrl) {
-                window.open(currentUrl, '_blank');
-            }
-            hideAllMessages();
-            showInputForm();
-        }
-        
-        // 隐藏错误消息
-        function hideErrorMessage() {
-            document.getElementById('errorMessage').style.display = 'none';
-            document.getElementById('inputContainer').style.display = 'flex';
-        }
-        
-        // 隐藏自动跳转消息
-        function hideAutoRedirectMessage() {
-            // 清除自动跳转定时器
-            clearTimeout(redirectTimeout);
-            document.getElementById('autoRedirectMessage').style.display = 'none';
-            document.getElementById('inputContainer').style.display = 'flex';
-        }
-        
-        // 隐藏所有消息
-        function hideAllMessages() {
-            clearTimeout(redirectTimeout);
-            document.getElementById('errorMessage').style.display = 'none';
-            document.getElementById('autoRedirectMessage').style.display = 'none';
-        }
-        
-        // 返回输入表单
-        function showInputForm() {
-            // 隐藏所有容器和消息，显示输入表单
-            document.getElementById('iframeContainer').style.display = 'none';
-            hideAllMessages();
-            document.getElementById('backButton').style.display = 'none';
-            document.getElementById('inputContainer').style.display = 'flex';
-            
-            // 清空iframe的src以停止加载
-            document.getElementById('websiteFrame').src = '';
         }
         
         // 保存URL到本地存储
@@ -379,10 +184,10 @@
             }, 3000);
         }
         
-        // 回车键触发加载
+        // 回车键触发跳转
         document.getElementById('targetUrl').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                loadWebsite();
+                redirectToTarget();
             }
         });
     </script>
