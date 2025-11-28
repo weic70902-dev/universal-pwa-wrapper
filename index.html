@@ -139,6 +139,20 @@
             margin-top: 15px;
             max-width: none;
         }
+        .auto-redirect-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #e9f7fe;
+            border: 1px solid #2196F3;
+            border-radius: 4px;
+            padding: 20px;
+            z-index: 2000;
+            display: none;
+            text-align: center;
+            max-width: 80%;
+        }
     </style>
 </head>
 <body>
@@ -167,7 +181,7 @@
                 <li>点击"加载网站"按钮即可在应用内浏览该网站</li>
                 <li>点击"保存URL"可以保存当前输入的URL，下次打开应用时会自动加载</li>
                 <li>要将此应用安装到桌面，请在浏览器中选择"安装"或"添加到主屏幕"</li>
-                <li>注意：某些网站可能阻止iframe加载，此时会自动跳转到新窗口</li>
+                <li>注意：某些网站可能阻止iframe加载，此时会自动在新窗口中打开</li>
             </ol>
         </div>
     </div>
@@ -182,9 +196,18 @@
         <button onclick="openInNewWindow()">在新窗口中打开</button>
         <button class="secondary" onclick="hideErrorMessage()">返回</button>
     </div>
+    
+    <div class="auto-redirect-message" id="autoRedirectMessage">
+        <h3>网站阻止了iframe嵌入</h3>
+        <p>正在为您自动跳转到新窗口...</p>
+        <p>如果未自动跳转，请点击下方按钮：</p>
+        <button onclick="openInNewWindow()">手动跳转</button>
+        <button class="secondary" onclick="hideAutoRedirectMessage()">取消</button>
+    </div>
 
     <script>
         let currentUrl = "";
+        let redirectTimeout;
         
         // 页面加载时恢复保存的URL
         window.addEventListener('load', function() {
@@ -241,8 +264,28 @@
                     console.log("Iframe failed to load");
                     handleIframeError(targetUrl);
                 };
+                
+                // 设置超时检测，某些网站可能不会触发onerror
+                setTimeout(function() {
+                    detectFrameBlocking(targetUrl);
+                }, 3000);
             } catch (e) {
                 showStatus('请输入有效的URL格式（包含http://或https://）', 'error');
+            }
+        }
+        
+        // 检测iframe是否被阻止加载
+        function detectFrameBlocking(url) {
+            const iframe = document.getElementById('websiteFrame');
+            try {
+                // 尝试访问iframe的内容，如果被阻止会抛出异常
+                if (iframe.contentDocument || iframe.contentWindow.document) {
+                    // 如果能访问到，说明没有被阻止
+                    return;
+                }
+            } catch (e) {
+                // 如果捕获到异常，说明iframe被阻止加载
+                handleIframeError(url);
             }
         }
         
@@ -252,8 +295,13 @@
             document.getElementById('iframeContainer').style.display = 'none';
             document.getElementById('backButton').style.display = 'none';
             
-            // 显示错误消息
-            document.getElementById('errorMessage').style.display = 'block';
+            // 显示自动跳转消息
+            document.getElementById('autoRedirectMessage').style.display = 'block';
+            
+            // 2秒后自动跳转
+            redirectTimeout = setTimeout(function() {
+                openInNewWindow();
+            }, 2000);
         }
         
         // 在新窗口中打开网站
@@ -261,7 +309,7 @@
             if (currentUrl) {
                 window.open(currentUrl, '_blank');
             }
-            hideErrorMessage();
+            hideAllMessages();
             showInputForm();
         }
         
@@ -271,11 +319,26 @@
             document.getElementById('inputContainer').style.display = 'flex';
         }
         
+        // 隐藏自动跳转消息
+        function hideAutoRedirectMessage() {
+            // 清除自动跳转定时器
+            clearTimeout(redirectTimeout);
+            document.getElementById('autoRedirectMessage').style.display = 'none';
+            document.getElementById('inputContainer').style.display = 'flex';
+        }
+        
+        // 隐藏所有消息
+        function hideAllMessages() {
+            clearTimeout(redirectTimeout);
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('autoRedirectMessage').style.display = 'none';
+        }
+        
         // 返回输入表单
         function showInputForm() {
-            // 隐藏iframe容器和错误消息，显示输入表单
+            // 隐藏所有容器和消息，显示输入表单
             document.getElementById('iframeContainer').style.display = 'none';
-            document.getElementById('errorMessage').style.display = 'none';
+            hideAllMessages();
             document.getElementById('backButton').style.display = 'none';
             document.getElementById('inputContainer').style.display = 'flex';
             
